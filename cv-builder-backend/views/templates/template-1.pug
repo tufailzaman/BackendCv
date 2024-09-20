@@ -1,0 +1,35 @@
+//- File: views/templates/template-1.pug
+doctype html
+html
+  head
+    title CV Template 1
+  body
+    h1 #{cv.firstName} #{cv.lastName}
+    h2 #{cv.profession}
+    p
+      | Intro: #{cv.intro}
+    h3 Contact Information
+    ul
+      li Email: #{cv.email}
+      li Phone: #{cv.phone}
+      li City: #{cv.city}
+      li Country: #{cv.country}
+      li Postal Code: #{cv.postalCode}
+    h3 Work Experience
+    ul
+      each work in cv.workExperience
+        li
+          | #{work.jobTitle} at #{work.company} - #{work.startDate} to #{work.endDate}
+    h3 Education
+    ul
+      each edu in cv.education
+        li
+          | #{edu.degree} in #{edu.fieldOfStudy} from #{edu.school} - #{edu.graduationDate}
+    h3 Skills
+    ul
+      each skill in cv.skills
+        li #{skill}
+    h3 Custom Sections
+    each section in cv.customSections
+      h4 #{section.sectionTitle}
+      p #{section.content}
