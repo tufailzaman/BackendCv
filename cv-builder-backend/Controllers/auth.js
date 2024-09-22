@@ -51,7 +51,7 @@ exports.postSignUp = async (req, res, next) => {
 
     await transporter.sendMail({
         to: email,
-        from: 'tufailzaman789@gmail.com',
+        from: 'generationcv333@gmail.com',
         subject: "Verify your email",
         html: `<h1> Your verification code is ${verificationCode}`
      });
@@ -126,9 +126,9 @@ exports.verifyEmail = async (req, res, next) =>{
     
            await user.save();
 
-           await  transporter.sendMail({
+        await  transporter.sendMail({
             to: email,
-            from: 'tufailzaman789@gmail.com',
+            from: 'generationcv333@gmail.com',
             subject: "Signed up Sucessfully",
             html: `<!DOCTYPE html>
     <html lang="en">
@@ -312,7 +312,7 @@ exports.postReset = async (req, res, next) => {
         await user.save();
        await transporter.sendMail({
             to: email,
-            from: 'tufailzaman789@gmail.com',
+            from: 'generationcv333@gmail.com',
             subject: 'Verify your email ',
             html: `your verification code is ${verificationCode}`
         });
@@ -354,7 +354,7 @@ exports.newPassword = async(req, res, next) => {
         await user.save();
         transporter.sendMail({
             to: user.email,
-            from: 'tufailzaman789@gmail.com',
+            from: 'generationcv333@gmail.com',
             subject: "Password Updated",
             html: `${user.firstName} ${user.lastName} keep you password secret and do not share with someone else`
         });
