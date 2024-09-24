@@ -57,7 +57,7 @@ exports.postSignUp = async (req, res, next) => {
      });
    
     res.send({
-        sucess: true,
+        success: true,
         error: false,
         message: " Please check your email to verify your email "
     });
@@ -113,13 +113,13 @@ exports.generateCode = async (req, res, next) => {
 
 exports.verifyEmail = async (req, res, next) =>{
     try{
-        const {email, code} = req.body;
+        const {email, verificationCode} = req.body;
         const user = await userModel.findOne({email: email});
         if(!user) {
             
             return res.status(400).send("does not have user")
         }
-        if(user.verificationCode === code) {
+        if(user.verificationCode === verificationCode) {
 
             user.isVerified = true;
             user.verificationCode = "";
@@ -188,7 +188,7 @@ exports.verifyEmail = async (req, res, next) =>{
 
 
            res.send({
-            sucess: true,
+            success: true,
             error: false,
             message: "Email Verified Sucessfully"
            })
@@ -324,7 +324,7 @@ exports.postReset = async (req, res, next) => {
     }
     catch (error) {
         res.send({
-            sucess: false,
+            success: false,
             error: true,
             message : "error in sending veriification code"
         })
@@ -360,7 +360,7 @@ exports.newPassword = async(req, res, next) => {
         });
 
         res.send({
-            sucess: true,
+            success: true,
             error: false,
             message: "password updated sucessfully"
         });
@@ -368,7 +368,7 @@ exports.newPassword = async(req, res, next) => {
     }
     catch ( error) {
         res.send({
-            sucess: false,
+            success: false,
             error: true,
             message: "New password can't save in the database"
         });
