@@ -37,6 +37,7 @@ exports.postSignUp = async (req, res, next) => {
     const hashedConfirm = await bcrypt.hash(confirmPassword,12);
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
 
     const userData = new userModel ({
         email : email,
@@ -44,7 +45,8 @@ exports.postSignUp = async (req, res, next) => {
         lastName: lastName,
         password: hashedPassword,
         confirmPassword: hashedConfirm,
-        verificationCode : verificationCode
+        verificationCode : verificationCode,
+        expiresAt: expiresAt
     });
     
     await userData.save();
@@ -85,8 +87,20 @@ exports.generateCode = async (req, res, next) => {
                 message: `does not have user of this email ${email}`
             })
         }
+
+        if (user.isVerified) {
+            return res.send({
+                success: false,
+                error: true,
+                message: "Email is already verified."
+            });
+          }
+
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+
         user.verificationCode = verificationCode;
+        user.expiresAt = expiresAt;
 
         await user.save();
         await transporter.sendMail({
@@ -119,6 +133,12 @@ exports.verifyEmail = async (req, res, next) =>{
             
             return res.status(400).send("does not have user")
         }
+
+        if (new Date() > user.expiresAt) {
+            return res.status(400).json({ message: 'Verification code has expired. Please request a new code.' });
+          }
+
+
         if(user.verificationCode === verificationCode) {
 
             user.isVerified = true;

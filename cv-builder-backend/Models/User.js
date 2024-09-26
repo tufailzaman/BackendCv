@@ -40,8 +40,9 @@ const UserSchema = new mongoose.Schema({
     verificationCode: {
         type: String
     },
-    resetToken:String,
-    resetTokenExpiration: Date
+    expiresAt: { 
+        type: Date 
+    }
    
 });
 
