@@ -143,6 +143,7 @@ exports.verifyEmail = async (req, res, next) =>{
 
             user.isVerified = true;
             user.verificationCode = "";
+            user.expiresAt = "";
     
            await user.save();
 
