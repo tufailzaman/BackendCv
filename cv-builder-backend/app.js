@@ -20,7 +20,8 @@ app.use(cors());
 // }));
 
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 const authRoutes = require('./Routes/auth');
 const controllerRoutes = require('./Routes/controllerRoutes');

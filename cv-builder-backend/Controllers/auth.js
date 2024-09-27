@@ -133,26 +133,27 @@ exports.verifyEmail = async (req, res, next) =>{
             
             return res.status(400).send("does not have user")
         }
-
+        
         if (new Date() > user.expiresAt) {
             return res.status(400).json({ message: 'Verification code has expired. Please request a new code.' });
-          }
-
-
+        }
+        
+        
         if(user.verificationCode === verificationCode) {
-
+            
             user.isVerified = true;
             user.verificationCode = "";
             user.expiresAt = "";
-    
-           await user.save();
-
-        await  transporter.sendMail({
-            to: email,
-            from: 'generationcv333@gmail.com',
-            subject: "Signed up Sucessfully",
-            html: `<!DOCTYPE html>
-    <html lang="en">
+            
+            await user.save();
+            
+      
+            await  transporter.sendMail({
+                to: email,
+                from: 'generationcv333@gmail.com',
+                subject: "Signed up Sucessfully",
+                html: `<!DOCTYPE html>
+                <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -206,6 +207,8 @@ exports.verifyEmail = async (req, res, next) =>{
     </body>
     </html>`
          });
+
+         console.log("err1")
 
 
            res.send({
