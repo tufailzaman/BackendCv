@@ -1,3 +1,4 @@
+// const { string } = require('joi');
 const mongoose = require('mongoose');
 
 const FormDataSchema = new mongoose.Schema({
@@ -23,6 +24,10 @@ const FormDataSchema = new mongoose.Schema({
   },
   customDetails: {
     type: Array,
+    required: true,
+  },
+  userId: {
+    type: String,
     required: true,
   },
 });

@@ -42,7 +42,9 @@ const UserSchema = new mongoose.Schema({
     },
     expiresAt: { 
         type: Date 
-    }
+    },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date
    
 });
 

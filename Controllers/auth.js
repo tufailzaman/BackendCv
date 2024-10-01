@@ -5,7 +5,8 @@ const jwt = require('jsonwebtoken');
 const sendgridTranport = require('nodemailer-sendgrid-transport');
 const DataValidation = require('../Models/DataValidator');
 const tokenModel = require('../Models/TokenModel');
-const cvModel = require('../Models/Cv');
+const crypto = require('crypto')
+const formDataModel = require('../Models/formDataModel')
 const {config} = require('dotenv');
 config();
 
@@ -37,7 +38,7 @@ exports.postSignUp = async (req, res, next) => {
     const hashedConfirm = await bcrypt.hash(confirmPassword,12);
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 1 * 60 * 1000);
 
     const userData = new userModel ({
         email : email,
@@ -55,7 +56,7 @@ exports.postSignUp = async (req, res, next) => {
         to: email,
         from: 'generationcv333@gmail.com',
         subject: "Verify your email",
-        html: `<h1> Your verification code is ${verificationCode}`
+        html: `<h1> Your verification code is ${verificationCode} </h1>`
      });
    
     res.send({
@@ -97,7 +98,7 @@ exports.generateCode = async (req, res, next) => {
           }
 
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 1 * 60 * 1000);
 
         user.verificationCode = verificationCode;
         user.expiresAt = expiresAt;
@@ -105,7 +106,7 @@ exports.generateCode = async (req, res, next) => {
         await user.save();
         await transporter.sendMail({
             to: email,
-            from: 'tufailzaman789@gmail.com',
+            from: 'generationcv333@gmail.com',
             subject: "Verify your email",
             html: `<h1> Your verification code is ${verificationCode}`
          });
@@ -151,7 +152,7 @@ exports.verifyEmail = async (req, res, next) =>{
             await  transporter.sendMail({
                 to: email,
                 from: 'generationcv333@gmail.com',
-                subject: "Signed up Sucessfully",
+                subject: "Signed up Successfully",
                 html: `<!DOCTYPE html>
                 <html lang="en">
     <head>
@@ -208,20 +209,17 @@ exports.verifyEmail = async (req, res, next) =>{
     </html>`
          });
 
-         console.log("err1")
-
-
            res.send({
             success: true,
             error: false,
-            message: "Email Verified Sucessfully"
+            message: "Email Verified Successfully"
            })
         } else {
 
             res.send({
-                sucess: false,
+                success: false,
                 error : true,
-                message: "Incorrect verification code and email deleted from database"
+                message: "Incorrect verification code, please try again"
             })
         }
     }
@@ -229,7 +227,7 @@ exports.verifyEmail = async (req, res, next) =>{
     
     catch (error) {
         res.send({
-            sucess: false,
+            success: false,
             error: true,
             message : "Email does not verified"
         })
@@ -240,7 +238,7 @@ exports.postLogin = async (req, res, next) => {
     const { email, password } = req.body;
 
     try {
-        // Check if email exists
+        
         const user = await userModel.findOne({ email });
         const isMatch = await bcrypt.compare(password, user.password);
         if (!user || !isMatch) {
@@ -251,7 +249,6 @@ exports.postLogin = async (req, res, next) => {
             });
         }
 
-        // Check if the account is verified
         if (!user.isVerified) {
             return res.status(403).json({
                 success: false,
@@ -260,14 +257,13 @@ exports.postLogin = async (req, res, next) => {
             });
         }
 
-        // Generate JWT token
         const token = jwt.sign(
             {
                 userId: user._id,
                 email: user.email
             },
-            process.env.JWT_SECRET, // Store your JWT secret in env variables
-            { expiresIn: '1h' } // Token expires in 1 hour
+            process.env.JWT_SECRET, 
+            { expiresIn: '1h' } 
         );
 
       const Token =  new tokenModel ({
@@ -275,27 +271,20 @@ exports.postLogin = async (req, res, next) => {
             token: token
         })
            await Token.save();
-        // Successful login
+        
         res.status(200).json({
             success: true,
             error: false,
             message: 'Login successful',
             token,
+            user,
             userId: user._id
         });
     }
-        // transporter.sendMail({
-        //     to: email,
-        //     from: 'tufailzaman789@gmail.com',
-        //     subject: "New Login Alert",
-        //     html: `
-        //    <
-        //     `
-        // })
     
     catch(error) {
         res.send({
-            sucess: false,
+            success: false,
             error: true,
             message: "Can not login"
         })
@@ -303,10 +292,10 @@ exports.postLogin = async (req, res, next) => {
 };
 
 exports.postLogout = async (req, res) => {
-    const { userId } = req.user; // Extract userId from the JWT token
+    const { userId } = req.user; 
 
 try {
-    // Remove the user's token from the tokenModel (logout by deleting the token)
+    
     await tokenModel.deleteMany({ userId });
 
     res.status(200).json({
@@ -323,97 +312,109 @@ try {
 };
 
 exports.postReset = async (req, res, next) => {
-    try{
-        const email = req.body.email;
+    const { email } = req.body;
+    
+    const user = await userModel.findOne({ email });
 
-        const user = await userModel.findOne({email: email});
-        if(!user) {
-         return   res.status(400).send(`Your email, ${email} does not exist`)
-        }
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        user.isVerified = false;
-        user.verificationCode = verificationCode;
-        await user.save();
-       await transporter.sendMail({
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpires = Date.now() + 20 * 60 * 1000; 
+
+    await user.save({ validateBeforeSave: false });
+
+    const origin = req.get('origin'); 
+    const referer = req.get('referer'); 
+    const baseURL = origin || referer;
+
+    
+    const resetURL = `${baseURL}/api/newPassword/${resetToken}`;
+    try {
+    
+        await transporter.sendMail({
             to: email,
             from: 'generationcv333@gmail.com',
-            subject: 'Verify your email ',
-            html: `your verification code is ${verificationCode}`
-        });
-        res.send({
-            sucess: true,
-            error: false,
-            message: "Check your email for code to verify your email"
+            subject: "Password Reset",
+            html: `You requested a password reset. Click on the following link to reset your password: ${resetURL}`
         })
-    }
-    catch (error) {
+
         res.send({
-            success: false,
-            error: true,
-            message : "error in sending veriification code"
+            success: true,
+            error : false,
+            message:"Check your email for link"
         })
+    } catch (err) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(500).json({ message: 'Error sending email. Try again later.' });
     }
 };
 
 exports.newPassword = async(req, res, next) => {
-    try{
-        const email = req.body.email;
-        const newPassword = req.body.newPassword;
-        const user = await userModel.findOne({email : email}); 
-    
-        if(!user) {
-            return res.status(400).send("can't find user with this id");
-        }
-        if(user.isVerified === false) {
-            return res.send({
-                success: false,
-                error: true,
-                message : "First verify your email"
-            })
-        }
-        const hashedPassword = await bcrypt.hash(newPassword,12);
-        user.password = hashedPassword;
-        user.confirmPassword = hashedPassword;
+    try {
+    const { token } = req.params;
+    const { password } = req.body;
 
-        await user.save();
-        transporter.sendMail({
-            to: user.email,
-            from: 'generationcv333@gmail.com',
-            subject: "Password Updated",
-            html: `${user.firstName} ${user.lastName} keep you password secret and do not share with someone else`
-        });
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-        res.send({
-            success: true,
-            error: false,
-            message: "password updated sucessfully"
-        });
+    const user = await userModel.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: Date.now() }
+    });
 
-    }
-    catch ( error) {
-        res.send({
+    if (!user) {
+        return res.send({
             success: false,
             error: true,
-            message: "New password can't save in the database"
-        });
+            message: "Invalid token or time out"
+        })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    user.password = hashedPassword;
+    user.confirmPassword = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    
+        await transporter.sendMail({
+            to: user.email,
+            from: 'generationcv333@gmail.com',
+            subject: 'Password Updated',
+            html:`Hello ${user.firstName} ${user.lastName}, your password has been successfully updated, please do not share with any one else.`
+        })
+        
+        res.status(200).json({ message: 'Password has been reset successfully and email sent' });
+    } catch (err) {
+        return res.status(500).json({ message: 'Password reset but failed to send confirmation email' });
     }
 };
 
 
 exports.postDeleteAccount = async (req, res) => {
     const {password} = req.body;
-    const userId = req.user.userId; // Extracted from the JWT token
+
+    const userId = req.params.userId;
 
     try {
-        // Find the user
+        
         const user = await userModel.findById(userId);
+        console
         if (!user) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
-        // Verify password
+        
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({
@@ -421,22 +422,19 @@ exports.postDeleteAccount = async (req, res) => {
                 message: 'Incorrect password'
             });
         }
-// Delete associated CVs
-    await cvModel.deleteMany({ userId });
-
-// Delete user account
+    await formDataModel.deleteMany({ userId });
     await userModel.findByIdAndDelete(userId);
-
-// Remove all tokens related to this user (if using DB for tokens)
-await tokenModel.deleteMany({ userId });
+    await tokenModel.deleteMany({ userId });
 
         res.status(200).json({
             success: true,
+            error:false,
             message: 'Account and associated CVs deleted successfully'
         });
     } catch (error) {
         res.status(500).json({
             success: false,
+            error: true,
             message: 'Error during account deletion'
         });
     }

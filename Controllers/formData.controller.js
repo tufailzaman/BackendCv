@@ -1,9 +1,10 @@
-const FormData = require('../Models/formData.model');
+const FormData = require('../Models/formDataModel');
 
-// Controller function to handle form data submission
+
 const submitFormData = async (req, res) => {
   try {
     const formData = new FormData(req.body);
+    
     await formData.save();
     res.status(201).json({ message: 'Data saved successfully!' });
   } catch (error) {
